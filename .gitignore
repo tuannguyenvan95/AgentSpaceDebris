@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env.local
+.env.*.local
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+artifacts/
+.DS_Store
+*.log
+.vercel/
