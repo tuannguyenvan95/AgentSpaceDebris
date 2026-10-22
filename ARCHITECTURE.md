@@ -18,7 +18,7 @@
 |          v                                v                                     |  ESA DISCOS)|
 |  +-----------------------------------------------------------------------+      |             |
 |  |                     GenLayer Intelligent Contract                     |<-----+             |
-|  |             Address: 0xcFfAc784E0D708e7f0d7C92b08235394C6a06464       |                    |
+|  |             Address: 0x01FFd9fcA056ad04Add778afa90a5Ddd0F6A4644       |                    |
 |  +-----------------------------------------------------------------------+                    |
 |                                     |                                                         |
 |                                     | (3) adjudicate_debris_deorbit                           |
