@@ -4,6 +4,7 @@ import {
   DebrisStats,
   readContract,
   getSavedContractAddress,
+  DEBRIS_PRESETS,
 } from './config/genlayer';
 import { Navbar } from './components/Navbar';
 import { StatsOverview } from './components/StatsOverview';
@@ -15,6 +16,7 @@ import { AstrodynamicsInspectorModal } from './components/AstrodynamicsInspector
 import { AppealModal } from './components/AppealModal';
 import { PullPayoutButton } from './components/PullPayoutButton';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { formatGen, shortenAddress } from './utils/formatters';
 import {
   Satellite,
   PlusCircle,
@@ -26,6 +28,12 @@ import {
   ExternalLink,
   ShieldCheck,
   Globe2,
+  Compass,
+  Cpu,
+  Layers,
+  Lock,
+  UserCheck,
+  Zap,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -43,7 +51,7 @@ export const App: React.FC = () => {
   const [isAppealOpen, setIsAppealOpen] = useState<boolean>(false);
   const [activePolicy, setActivePolicy] = useState<DebrisPolicyData | null>(null);
 
-  // Auto connect wallet if previously approved
+  // Auto connect wallet if previously authorized
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       (window as any).ethereum
@@ -87,17 +95,17 @@ export const App: React.FC = () => {
     setAccount('');
   };
 
-  // Load Policies and Stats from Intelligent Contract
+  // Load Policies and Stats directly from Intelligent Contract (100% On-Chain)
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch Stats
+      // 1. Fetch Stats from contract
       const rawStats = await readContract('get_stats', []);
       if (rawStats && typeof rawStats === 'object') {
         setStats(rawStats as DebrisStats);
       }
 
-      // 2. Fetch Policies
+      // 2. Fetch Policies from contract storage
       const rawPolicies = await readContract('get_all_policies', []);
       if (Array.isArray(rawPolicies)) {
         setPolicies(rawPolicies as DebrisPolicyData[]);
@@ -105,7 +113,7 @@ export const App: React.FC = () => {
         setPolicies([]);
       }
     } catch (err) {
-      console.warn('Error loading contract data from StudioNet:', err);
+      console.warn('Error reading on-chain contract data:', err);
     } finally {
       setLoading(false);
     }
@@ -113,7 +121,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 12000);
+    const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -140,7 +148,7 @@ export const App: React.FC = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-space-950 text-slate-100 flex flex-col justify-between selection:bg-orbital-cyan/30">
         <div>
-          {/* Navbar */}
+          {/* Web3 Pro Navbar */}
           <Navbar
             account={account}
             onConnect={handleConnect}
@@ -148,172 +156,271 @@ export const App: React.FC = () => {
             onContractAddressChange={loadData}
           />
 
-          {/* Main Hero Container */}
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Hero Top Title & CTAs */}
-            <div className="relative mb-8 p-8 rounded-3xl bg-gradient-to-r from-space-900 via-space-850 to-space-900 border border-space-750 shadow-2xl overflow-hidden">
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="max-w-2xl">
-                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-orbital-cyan/10 border border-orbital-cyan/30 text-xs font-mono text-orbital-cyan mb-3">
+          {/* Tactical Command Matrix Body */}
+          <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Top Mission Control Header */}
+            <div className="relative mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-space-900 via-space-850 to-space-900 border border-space-750 shadow-2xl overflow-hidden">
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="max-w-3xl">
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-orbital-cyan/10 border border-orbital-cyan/30 text-xs font-mono text-orbital-cyan mb-3 shadow-orbital-glow">
                     <Radio className="w-3.5 h-3.5 animate-pulse" />
-                    <span>AUTONOMOUS ASTRODYNAMICS ORACLE ON GENLAYER</span>
+                    <span>AUTONOMOUS ASTRODYNAMICS ORACLE · GENLAYER STUDIONET (CHAIN 61999)</span>
                   </div>
                   <h1 className="text-3xl sm:text-4xl font-heading font-extrabold text-white tracking-tight leading-tight">
-                    Orbital Collision Avoidance & Active Space Debris Escrow
+                    AgentSpaceDebris Tactical Command Matrix
                   </h1>
                   <p className="mt-3 text-sm text-slate-300 leading-relaxed font-sans">
-                    Guaranteed parametric escrow for LEO satellite constellations and Active Debris Removal (ADR) contractors. On-chain AI astrodynamics tribunals verify Two-Line Element (TLE) radar ephemeris to release bounties only upon verified atmospheric reentry burn (&le; 120 km).
+                    Parametric collision insurance & active debris removal escrow protocol. Evaluates Two-Line Element (TLE) radar ephemeris via on-chain AI Astrodynamics Magistrate to eliminate Kessler cascade hazards.
                   </p>
                 </div>
 
-                {/* CTAs */}
-                <div className="flex flex-col sm:flex-row md:flex-col items-stretch gap-3 shrink-0">
+                {/* Primary CTAs & Pull-Payment Safety Vault */}
+                <div className="flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end gap-3 shrink-0">
                   <button
                     onClick={() => setIsCreateOpen(true)}
-                    className="flex items-center justify-center space-x-2 px-6 py-3.5 bg-gradient-to-r from-orbital-cyan via-sky-400 to-blue-600 text-space-950 font-heading font-bold text-sm rounded-xl hover:brightness-110 shadow-orbital-glow transition"
+                    className="flex items-center justify-center space-x-2.5 px-6 py-3.5 bg-gradient-to-r from-orbital-cyan via-sky-400 to-blue-600 text-space-950 font-heading font-extrabold text-sm rounded-xl hover:brightness-110 shadow-orbital-glow transition"
                   >
                     <PlusCircle className="w-5 h-5" />
-                    <span>Lock Debris Bounty Escrow</span>
+                    <span>Initiate Removal Escrow</span>
                   </button>
 
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center">
                     <PullPayoutButton account={account} onSuccess={loadData} />
                   </div>
                 </div>
               </div>
 
-              {/* Background Glow Accents */}
+              {/* Ambient Radial Lights */}
               <div className="absolute top-0 right-0 w-96 h-96 bg-orbital-cyan/10 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-deorbit-green/5 rounded-full blur-3xl pointer-events-none" />
             </div>
 
-            {/* Aggregated Protocol Statistics */}
+            {/* Aggregated Protocol Telemetry Stats */}
             <StatsOverview stats={stats} totalPoliciesCount={policies.length} />
 
-            {/* Interactive Orbital Radar Visualizer */}
-            <OrbitalRadarVisualizer
-              policies={policies}
-              onSelectPolicy={(policy) => {
-                setActivePolicy(policy);
-                setIsInspectorOpen(true);
-              }}
-            />
+            {/* 3-Column Tactical Command Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Mission Control & Role Station (3 Cols) */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Station Card: User Role & Permissions */}
+                <div className="p-5 rounded-2xl bg-space-850/95 border border-space-700/80 shadow-radar-console font-mono text-xs">
+                  <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-space-750">
+                    <UserCheck className="w-4 h-4 text-orbital-cyan" />
+                    <h3 className="font-heading font-bold text-white text-sm">
+                      STAKEHOLDER IDENTITY
+                    </h3>
+                  </div>
 
-            {/* Policies Surveillance Hub */}
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-heading font-bold text-white flex items-center gap-2">
-                  <span>Debris Removal Escrow Policies</span>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-space-800 text-orbital-cyan border border-space-700">
-                    {filteredPolicies.length}
-                  </span>
-                </h2>
-                <p className="text-xs font-mono text-slate-400 mt-0.5">
-                  Live parametric smart contract agreements deployed on GenLayer StudioNet
-                </p>
-              </div>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase block mb-1">CONNECTED ADDRESS</span>
+                      <div className="p-2.5 rounded-lg bg-space-900 border border-space-800 text-white font-bold break-all">
+                        {account ? shortenAddress(account) : 'Not Connected'}
+                      </div>
+                    </div>
 
-              {/* Search and Filters */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search NORAD, ID, Address..."
-                    className="pl-9 pr-3 py-1.5 bg-space-850 border border-space-700 rounded-lg text-xs text-white font-mono placeholder:text-slate-500 focus:border-orbital-cyan focus:outline-none w-52 sm:w-64"
-                  />
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase block mb-1">ON-CHAIN NETWORK</span>
+                      <div className="p-2.5 rounded-lg bg-space-900 border border-space-800 text-orbital-cyan flex items-center justify-between">
+                        <span>StudioNet (Chain 61999)</span>
+                        <span className="w-2 h-2 rounded-full bg-deorbit-green" />
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-space-900/90 rounded-xl border border-space-750 text-[11px] text-slate-300 space-y-1.5">
+                      <div className="font-bold text-white flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-deorbit-green" />
+                        Role-Based Access Control:
+                      </div>
+                      <p className="text-slate-400 leading-relaxed text-[10px]">
+                        • <strong>Operator:</strong> Lock bounty, appeal, finalize payout, reclaim expired.<br/>
+                        • <strong>ADR Contractor:</strong> Submit TLE radar telemetry, appeal, finalize payout.<br/>
+                        • <strong>Observer:</strong> Inspect on-chain astrodynamics consensus & radar blips.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-1.5 bg-space-850 border border-space-700 rounded-lg text-xs text-slate-200 font-mono focus:border-orbital-cyan focus:outline-none"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="OPEN">Open & Telemetry Linked</option>
-                  <option value="COOLING">Awaiting Settlement (Cooling-off)</option>
-                  <option value="SETTLED_FULL">De-orbit Verified (100% Payout)</option>
-                  <option value="PARTIAL">Partial Decay (40% Milestone)</option>
-                  <option value="REJECTED">Removal Failed / Refunded</option>
-                  <option value="DISPUTED">Under Dispute Appeal</option>
-                </select>
+                {/* Target Pre-Flight Presets */}
+                <div className="p-5 rounded-2xl bg-space-850/95 border border-space-700/80 shadow-radar-console font-mono text-xs">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-space-750">
+                    <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                      <Satellite className="w-4 h-4 text-orbital-cyan" />
+                      PRIORITY TARGETS
+                    </span>
+                    <span className="text-[10px] text-slate-500">LEO HAZARDS</span>
+                  </div>
 
-                <button
-                  onClick={loadData}
-                  title="Refresh State from StudioNet"
-                  className="p-2 rounded-lg bg-space-850 border border-space-700 text-slate-400 hover:text-orbital-cyan transition"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-orbital-cyan' : ''}`} />
-                </button>
+                  <div className="space-y-2">
+                    {DEBRIS_PRESETS.map((dp) => (
+                      <div
+                        key={dp.norad_cat_id}
+                        className="p-2.5 rounded-lg bg-space-900 border border-space-800 hover:border-space-700 transition"
+                      >
+                        <div className="flex items-center justify-between font-bold text-orbital-cyan text-[11px]">
+                          <span>NORAD #{dp.norad_cat_id}</span>
+                          <span className="text-slate-400 font-normal">~{dp.initial_altitude_km} km</span>
+                        </div>
+                        <div className="text-[11px] text-slate-200 truncate mt-0.5">{dp.name}</div>
+                        <div className="text-[10px] text-slate-500 mt-1 line-clamp-1">{dp.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Center Column: Live SSA Radar Console (5 Cols) */}
+              <div className="lg:col-span-5 space-y-6">
+                <OrbitalRadarVisualizer
+                  policies={policies}
+                  onSelectPolicy={(policy) => {
+                    setActivePolicy(policy);
+                    setIsInspectorOpen(true);
+                  }}
+                />
+
+                {/* Astrodynamics Specification Box */}
+                <div className="p-5 rounded-2xl bg-space-850/95 border border-space-700/80 shadow-radar-console font-mono text-xs space-y-3">
+                  <div className="flex items-center space-x-2 pb-2 border-b border-space-750">
+                    <Compass className="w-4 h-4 text-orbital-cyan" />
+                    <h3 className="font-heading font-bold text-white text-sm">
+                      TRI-VECTOR CONSENSUS MAGISTRATE
+                    </h3>
+                  </div>
+
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    Unlike traditional EVM contracts, GenLayer validators compute transcendental Keplerian orbital equations directly on-chain from Two-Line Element (TLE) ephemeris:
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                    <div className="p-2 rounded bg-space-900 border border-space-800">
+                      <div className="text-orbital-cyan font-bold">Vector A</div>
+                      <div className="text-slate-400 mt-0.5">Orbital Decay &Delta;h</div>
+                    </div>
+                    <div className="p-2 rounded bg-space-900 border border-space-800">
+                      <div className="text-plasma-orange font-bold">Vector B</div>
+                      <div className="text-slate-400 mt-0.5">&le;120 km Reentry</div>
+                    </div>
+                    <div className="p-2 rounded bg-space-900 border border-space-800">
+                      <div className="text-deorbit-green font-bold">Vector C</div>
+                      <div className="text-slate-400 mt-0.5">Kessler Reduction</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Live On-Chain Policies Ledger (4 Cols) */}
+              <div className="lg:col-span-4 space-y-4">
+                {/* Ledger Header & Search */}
+                <div className="p-4 rounded-2xl bg-space-850/95 border border-space-700/80 shadow-radar-console font-mono text-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading font-bold text-white text-sm flex items-center gap-2">
+                      <span>ON-CHAIN ESCROW POLICIES</span>
+                      <span className="px-2 py-0.5 rounded-full bg-space-900 text-orbital-cyan border border-space-750 font-mono text-xs">
+                        {filteredPolicies.length}
+                      </span>
+                    </span>
+                    <button
+                      onClick={loadData}
+                      title="Sync On-Chain State"
+                      className="p-1.5 rounded-lg bg-space-900 border border-space-750 text-slate-400 hover:text-orbital-cyan transition"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-orbital-cyan' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search NORAD, ID, Address..."
+                        className="w-full pl-8 pr-3 py-1.5 bg-space-900 border border-space-750 rounded-lg text-xs text-white font-mono placeholder:text-slate-500 focus:border-orbital-cyan focus:outline-none"
+                      />
+                    </div>
+
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-space-900 border border-space-750 rounded-lg text-xs text-slate-200 font-mono focus:border-orbital-cyan focus:outline-none"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="OPEN">Open & Telemetry Linked</option>
+                      <option value="COOLING">Awaiting Settlement (Cooling-off)</option>
+                      <option value="SETTLED_FULL">De-orbit Verified (100% Payout)</option>
+                      <option value="PARTIAL">Partial Decay (40% Milestone)</option>
+                      <option value="REJECTED">Removal Failed / Refunded</option>
+                      <option value="DISPUTED">Under Dispute Appeal</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Policies Feed */}
+                {filteredPolicies.length === 0 ? (
+                  <div className="rounded-2xl bg-space-850/60 border border-space-750 p-8 text-center font-mono text-xs">
+                    <Satellite className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                    <div className="font-bold text-white mb-1">No Debris Policies Match</div>
+                    <p className="text-slate-400 text-[11px] mb-4">
+                      Initiate a removal bounty on StudioNet to start orbital decay tracking.
+                    </p>
+                    <button
+                      onClick={() => setIsCreateOpen(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-orbital-cyan to-blue-600 text-space-950 font-bold text-xs rounded-lg hover:brightness-110 shadow-orbital-glow transition"
+                    >
+                      Initiate First Escrow
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[920px] overflow-y-auto pr-1">
+                    {filteredPolicies.map((policy) => (
+                      <PolicyCard
+                        key={policy.policy_id}
+                        policy={policy}
+                        account={account}
+                        onOpenSubmitTelemetry={(p) => {
+                          setActivePolicy(p);
+                          setIsSubmitOpen(true);
+                        }}
+                        onOpenInspector={(p) => {
+                          setActivePolicy(p);
+                          setIsInspectorOpen(true);
+                        }}
+                        onOpenAppeal={(p) => {
+                          setActivePolicy(p);
+                          setIsAppealOpen(true);
+                        }}
+                        onRefresh={loadData}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Grid of Policy Cards */}
-            {filteredPolicies.length === 0 ? (
-              <div className="rounded-2xl bg-space-850/60 border border-space-750 p-12 text-center my-6">
-                <Satellite className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-base font-heading font-bold text-white mb-1">
-                  No Active Debris Policies Found
-                </h3>
-                <p className="text-xs font-mono text-slate-400 max-w-md mx-auto mb-5">
-                  Deposit GEN bounty to sponsor the rendezvous and atmospheric de-orbiting of defunct space debris bodies.
-                </p>
-                <button
-                  onClick={() => setIsCreateOpen(true)}
-                  className="inline-flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-orbital-cyan to-blue-600 text-space-950 font-bold text-xs rounded-xl hover:brightness-110 shadow-orbital-glow transition"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Lock First Debris Escrow</span>
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredPolicies.map((policy) => (
-                  <PolicyCard
-                    key={policy.policy_id}
-                    policy={policy}
-                    account={account}
-                    onOpenSubmitTelemetry={(p) => {
-                      setActivePolicy(p);
-                      setIsSubmitOpen(true);
-                    }}
-                    onOpenInspector={(p) => {
-                      setActivePolicy(p);
-                      setIsInspectorOpen(true);
-                    }}
-                    onOpenAppeal={(p) => {
-                      setActivePolicy(p);
-                      setIsAppealOpen(true);
-                    }}
-                    onRefresh={loadData}
-                  />
-                ))}
-              </div>
-            )}
           </main>
         </div>
 
-        {/* High-Tech Astrodynamics Footer */}
+        {/* Space Situational Footer */}
         <footer className="border-t border-space-800 bg-space-950 py-8 px-4 sm:px-6 lg:px-8 mt-16 font-mono text-xs text-slate-400">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
               <Satellite className="w-5 h-5 text-orbital-cyan" />
               <div>
                 <span className="text-white font-bold">AgentSpaceDebris Protocol</span>
-                <span className="text-slate-500 ml-2">· GenLayer StudioNet (Chain 61999)</span>
+                <span className="text-slate-500 ml-2">· GenLayer StudioNet (Chain 61999) · 100% On-Chain</span>
               </div>
             </div>
 
             <div className="flex items-center space-x-6 text-slate-400 text-xs">
               <a
-                href="https://studio.genlayer.com"
+                href={`https://studio.genlayer.com/address/${getSavedContractAddress()}`}
                 target="_blank"
                 rel="noreferrer"
                 className="hover:text-orbital-cyan flex items-center gap-1 transition"
               >
-                <span>StudioNet Explorer</span>
+                <span>Contract Explorer</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
               <a
@@ -338,7 +445,7 @@ export const App: React.FC = () => {
           </div>
         </footer>
 
-        {/* Modals */}
+        {/* Interactive Modals */}
         <CreatePolicyModal
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}

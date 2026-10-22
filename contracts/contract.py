@@ -60,7 +60,14 @@ def _addr_str(addr) -> str:
     try:
         return addr.as_hex.lower()
     except Exception:
-        return str(addr).lower()
+        s = str(addr).lower()
+        if s.startswith("0x"):
+            return s
+        try:
+            int_val = int(s)
+            return f"0x{int_val:040x}".lower()
+        except Exception:
+            return s
 
 
 def _get_sender() -> Address:
@@ -124,6 +131,7 @@ class DebrisRemovalPolicy:
     confidence: u8
     measured_final_perigee_km: u32  # Measured final perigee altitude (km)
     altitude_decay_km: u32          # Measured altitude reduction achieved (km)
+    tri_vector_breakdown: str       # JSON breakdown of [Decay Vector, Reentry Interface, Kessler Risk Score]
     created_at_time: bigint         # Trusted Unix timestamp when policy was created
     expires_at_time: bigint         # Trusted Unix timestamp when mission window concludes
     audit_completed_time: bigint    # Trusted Unix timestamp when AI jury rendered verdict
@@ -210,7 +218,7 @@ class Contract(gl.Contract):
         target_max_perigee_km: u32,
         duration_blocks: u32
     ) -> str:
-        """Satellite operator locks bounty escrow for removing a hazardous orbital debris body."""
+        """Constellation operator locks bounty escrow for de-orbiting a hazardous orbital debris body."""
         self._ensure_owner()
         escrow = bigint(gl.message.value)
         if escrow <= bigint(0):
@@ -254,6 +262,11 @@ class Contract(gl.Contract):
             confidence=u8(0),
             measured_final_perigee_km=u32(0),
             altitude_decay_km=u32(0),
+            tri_vector_breakdown=json.dumps({
+                "decay_vector": "Pending ADR servicer rendezvous",
+                "atmospheric_interface": "Nominal high-orbit persistence",
+                "kessler_mitigation_score": 0
+            }),
             created_at_time=current_time,
             expires_at_time=expires_at,
             audit_completed_time=bigint(0),
@@ -300,7 +313,7 @@ class Contract(gl.Contract):
 
     @gl.public.write
     def adjudicate_debris_deorbit(self, policy_id: str) -> None:
-        """AI Astrodynamics Jury evaluates TLE ephemeris, perigee decay, and reentry burn status."""
+        """AI Astrodynamics Magistrate executes Tri-Vector consensus evaluation on orbital ephemeris."""
         self._ensure_owner()
         pid = self._resolve_pid(policy_id)
         if pid not in self.policies:
@@ -336,41 +349,43 @@ class Contract(gl.Contract):
                     "confidence": 0,
                     "measured_final_perigee_km": 0,
                     "altitude_decay_km": 0,
+                    "tri_vector_breakdown": json.dumps({"error": "Radar endpoint unreachable"}),
                     "reason": "Orbital tracking TLE feed unreachable or empty.",
                     "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
                 }
 
             ev_hash = hashlib.sha256(raw_feed.encode("utf-8")).hexdigest()
 
-            prompt = f"""You are the Chief Orbital Mechanics and Space Situational Awareness Magistrate on GenLayer.
-Evaluate the Two-Line Element (TLE) and radar ephemeris tracking data for space object NORAD Cat ID: {target_norad}.
-TARGET PERIGEE REENTRY THRESHOLD: <= {target_perigee} km (or confirmed atmospheric disintegration)
+            prompt = f"""You are the Chief Astrodynamics Magistrate & Space Situational Awareness (SSA) Validator on GenLayer.
+Perform a rigorous Tri-Vector orbital consensus evaluation on NORAD Cat ID: {target_norad}.
+TARGET PERIGEE REENTRY CEILING: <= {target_perigee} km (or confirmed atmospheric disintegration)
 
-ORBITAL TRACKING TELEMETRY:
+ORBITAL TRACKING TELEMETRY (TLE / EPHEMERIS / RADAR OBSERVATION):
 <orbital_telemetry_payload>
 {raw_feed[:4000]}
 </orbital_telemetry_payload>
 
-EVALUATION RUBRIC:
-1. Extract measured final perigee altitude in kilometers (or 0 km if reentry decay completed).
-2. Calculate total altitude decay achieved (initial orbit altitude minus final altitude in km).
-3. Check for NORAD object status: On-orbit vs Decayed/Reentered.
-4. Decision Matrix:
-   - Full De-orbit: Measured perigee <= {target_perigee} km OR status is confirmed DECAYED/REENTERED:
-     Output "DEORBIT_CONFIRMED_FULL" (100% bounty released to ADR contractor).
-   - Partial Orbit Lowering: Altitude decay >= 150 km BUT perigee remains > {target_perigee} km:
-     Output "PARTIAL_ORBIT_LOWERING" (40% milestone released, 60% preserved).
-   - Inactive / Mission Failure: Altitude decay < 150 km AND perigee > {target_perigee} km:
-     Output "REMOVAL_FAILED_REJECTED" (100% refund to operator, bounty revoked).
+TRI-VECTOR ASTRODYNAMICS EVALUATION:
+1. Vector A (Orbital Decay): Calculate final measured perigee altitude (km) and total altitude decay achieved (km).
+2. Vector B (Atmospheric Interface): Check for entry into dense mesosphere (perigee <= {target_perigee} km) or DECAYED status.
+3. Vector C (Kessler Risk Reduction): Assign Kessler mitigation index (0-100) based on cross-sectional collision hazard elimination.
+
+DECISION MATRIX:
+- DEORBIT_CONFIRMED_FULL: Measured perigee <= {target_perigee} km OR status is confirmed DECAYED/REENTERED (100% bounty released).
+- PARTIAL_ORBIT_LOWERING: Altitude decay >= 150 km BUT perigee remains > {target_perigee} km (40% milestone released, 60% preserved).
+- REMOVAL_FAILED_REJECTED: Altitude decay < 150 km AND perigee > {target_perigee} km (100% refunded to operator).
 
 SECURITY CANARY: Echo "{CANARY_TOKEN}" in JSON.
 Respond ONLY with valid JSON without markdown fences:
 {{
   "canary": "{CANARY_TOKEN}",
   "verdict": "DEORBIT_CONFIRMED_FULL" | "PARTIAL_ORBIT_LOWERING" | "REMOVAL_FAILED_REJECTED",
-  "confidence": <0-100>,
+  "confidence": <integer 0-100>,
   "measured_final_perigee_km": <integer>,
   "altitude_decay_km": <integer>,
+  "decay_vector_desc": "<summary under 80 chars>",
+  "atmospheric_interface_desc": "<summary under 80 chars>",
+  "kessler_mitigation_score": <integer 0-100>,
   "reason": "<rigorous astrodynamics justification under 200 chars>"
 }}"""
 
@@ -391,6 +406,7 @@ Respond ONLY with valid JSON without markdown fences:
                     "confidence": 0,
                     "measured_final_perigee_km": 0,
                     "altitude_decay_km": 0,
+                    "tri_vector_breakdown": json.dumps({"error": "AI parse failure"}),
                     "reason": "AI validator parsing failed or malformed JSON returned.",
                     "evidence_hash": ev_hash,
                 }
@@ -402,6 +418,7 @@ Respond ONLY with valid JSON without markdown fences:
                     "confidence": 0,
                     "measured_final_perigee_km": 0,
                     "altitude_decay_km": 0,
+                    "tri_vector_breakdown": json.dumps({"error": "Canary mismatch"}),
                     "reason": "Security canary mismatch detected in jury output.",
                     "evidence_hash": ev_hash,
                 }
@@ -414,9 +431,16 @@ Respond ONLY with valid JSON without markdown fences:
                     "confidence": 0,
                     "measured_final_perigee_km": 0,
                     "altitude_decay_km": 0,
+                    "tri_vector_breakdown": json.dumps({"error": f"Unsupported verdict {v_raw}"}),
                     "reason": f"Unsupported verdict '{v_raw}' returned.",
                     "evidence_hash": ev_hash,
                 }
+
+            breakdown = {
+                "decay_vector": str(parsed.get("decay_vector_desc", "Orbital decay verified")),
+                "atmospheric_interface": str(parsed.get("atmospheric_interface_desc", "Atmospheric status verified")),
+                "kessler_mitigation_score": max(0, min(100, int(parsed.get("kessler_mitigation_score", 90))))
+            }
 
             return {
                 "canary": CANARY_TOKEN,
@@ -424,6 +448,7 @@ Respond ONLY with valid JSON without markdown fences:
                 "confidence": max(0, min(100, int(parsed.get("confidence", 85)))),
                 "measured_final_perigee_km": max(0, min(50000, int(parsed.get("measured_final_perigee_km", 0)))),
                 "altitude_decay_km": max(0, min(50000, int(parsed.get("altitude_decay_km", 0)))),
+                "tri_vector_breakdown": json.dumps(breakdown),
                 "reason": str(parsed.get("reason", "Orbital decay evaluation concluded."))[:200],
                 "evidence_hash": ev_hash,
             }
@@ -446,6 +471,8 @@ Respond ONLY with valid JSON without markdown fences:
         p.confidence = u8(int(adjudication_res["confidence"]))
         p.measured_final_perigee_km = u32(int(adjudication_res["measured_final_perigee_km"]))
         p.altitude_decay_km = u32(int(adjudication_res["altitude_decay_km"]))
+        if "tri_vector_breakdown" in adjudication_res and adjudication_res["tri_vector_breakdown"]:
+            p.tri_vector_breakdown = str(adjudication_res["tri_vector_breakdown"])
         if "evidence_hash" in adjudication_res and adjudication_res["evidence_hash"]:
             p.evidence_hash = str(adjudication_res["evidence_hash"])
 
@@ -789,6 +816,7 @@ Respond ONLY with valid JSON:
             "confidence": int(p.confidence),
             "measured_final_perigee_km": int(p.measured_final_perigee_km),
             "altitude_decay_km": int(p.altitude_decay_km),
+            "tri_vector_breakdown": p.tri_vector_breakdown,
             "created_at_time": str(p.created_at_time),
             "expires_at_time": str(p.expires_at_time),
             "audit_completed_time": str(p.audit_completed_time),
@@ -863,6 +891,7 @@ Respond ONLY with valid JSON:
                     "confidence": int(p.confidence),
                     "measured_final_perigee_km": int(p.measured_final_perigee_km),
                     "altitude_decay_km": int(p.altitude_decay_km),
+                    "tri_vector_breakdown": p.tri_vector_breakdown,
                     "created_at_time": str(p.created_at_time),
                     "expires_at_time": str(p.expires_at_time),
                     "audit_completed_time": str(p.audit_completed_time),

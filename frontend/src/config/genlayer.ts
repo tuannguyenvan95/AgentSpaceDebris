@@ -6,7 +6,7 @@ export const STUDIONET_RPC_URL = 'https://studio.genlayer.com/api';
 export const STUDIO_URL = 'https://studio.genlayer.com';
 
 // Authoritative Intelligent Contract deployed on GenLayer StudioNet
-export const DEFAULT_CONTRACT_ADDRESS = '0xCC300573284e1d3EE5882426fC9033F255A3Aa45';
+export const DEFAULT_CONTRACT_ADDRESS = "0xf7908283868BE5BE9ac235F74F900F906FA92F10";
 
 export function getSavedContractAddress(): string {
   if (typeof window !== 'undefined') {
@@ -103,6 +103,7 @@ export interface DebrisPolicyData {
   confidence: number;
   measured_final_perigee_km: number;
   altitude_decay_km: number;
+  tri_vector_breakdown?: string;
   created_at_time: string;
   expires_at_time: string;
   audit_completed_time: string;

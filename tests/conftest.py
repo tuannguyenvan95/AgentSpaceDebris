@@ -187,6 +187,11 @@ class _MockContractInstance:
             "confidence": 0,
             "measured_final_perigee_km": 0,
             "altitude_decay_km": 0,
+            "tri_vector_breakdown": json.dumps({
+                "decay_vector": "Pending ADR servicer rendezvous",
+                "atmospheric_interface": "Nominal high-orbit persistence",
+                "kessler_mitigation_score": 0
+            }),
             "created_at_time": self.simulated_time,
             "expires_at_time": expires_at,
             "audit_completed_time": 0,
@@ -289,6 +294,11 @@ class _MockContractInstance:
         p["confidence"] = int(parsed.get("confidence", 85))
         p["measured_final_perigee_km"] = int(parsed.get("measured_final_perigee_km", 0))
         p["altitude_decay_km"] = int(parsed.get("altitude_decay_km", 0))
+        p["tri_vector_breakdown"] = json.dumps({
+            "decay_vector": str(parsed.get("decay_vector_desc", "Orbital decay verified")),
+            "atmospheric_interface": str(parsed.get("atmospheric_interface_desc", "Atmospheric status verified")),
+            "kessler_mitigation_score": int(parsed.get("kessler_mitigation_score", 92))
+        })
         p["evidence_hash"] = ev_hash
         p["status"] = STATUS_AWAITING_PAYOUT
         p["audit_completed_time"] = self.simulated_time

@@ -18,7 +18,7 @@
 |          v                                v                                     |  ESA DISCOS)|
 |  +-----------------------------------------------------------------------+      |             |
 |  |                     GenLayer Intelligent Contract                     |<-----+             |
-|  |             Address: 0xCC300573284e1d3EE5882426fC9033F255A3Aa45       |                    |
+|  |             Address: 0xf7908283868BE5BE9ac235F74F900F906FA92F10       |                    |
 |  +-----------------------------------------------------------------------+                    |
 |                                     |                                                         |
 |                                     | (3) adjudicate_debris_deorbit                           |
@@ -31,8 +31,10 @@
 |                                     v                                                         |
 |                      +------------------------------+                                         |
 |                      |    gl.vm.run_nondet          |                                         |
-|                      |  Leader / Validator Consensus|                                         |
-|                      |  Checks: Perigee <= 120 km   |                                         |
+|                      |  Tri-Vector Consensus Engine |                                         |
+|                      |  - Vector A: Orbit Decay     |                                         |
+|                      |  - Vector B: Reentry Ceiling |                                         |
+|                      |  - Vector C: Kessler De-Risk |                                         |
 |                      |  Canary: CANARY_TOKEN        |                                         |
 |                      +------------------------------+                                         |
 |                                     |                                                         |

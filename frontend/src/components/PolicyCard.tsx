@@ -28,6 +28,8 @@ import {
   AlertTriangle,
   RotateCcw,
   Sparkles,
+  Radio,
+  Lock,
 } from 'lucide-react';
 
 interface PolicyCardProps {
@@ -62,6 +64,8 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
       if (account) {
         const role = await fetchUserRole(policy.policy_id, account);
         setUserRole(role);
+      } else {
+        setUserRole('OBSERVER');
       }
       if (isAwaitingPayout) {
         const remaining = await fetchRemainingCoolingOff(policy.policy_id);
@@ -158,42 +162,20 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
     }
   };
 
-  // Cancel or Reclaim
-  const handleReclaim = async () => {
-    if (!account) return;
-    setActionLoading('reclaim');
-    try {
-      const contractAddress = getSavedContractAddress();
-      const calldata = encodeCalldata('cancel_or_reclaim', [policy.policy_id]);
-
-      const txHash = await (window as any).ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{ from: account, to: contractAddress, data: calldata }],
-      });
-
-      console.log('Submitted cancel_or_reclaim tx:', txHash);
-      await waitForTransactionReceipt(txHash);
-      onRefresh();
-    } catch (err: any) {
-      console.error('Reclaim error:', err);
-      alert(err?.message || 'Escrow reclaim failed.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Progress percentage calculation
-  const targetPerigee = policy.target_max_perigee_km || 120;
-  const measuredPerigee = policy.measured_final_perigee_km;
-  const decayAchieved = policy.altitude_decay_km;
+  const isOperator = userRole === 'OPERATOR';
+  const isContractor = userRole === 'CONTRACTOR';
+  const isOwner = userRole === 'OWNER';
+  const canAdjudicate = isOperator || isContractor || isOwner;
+  const canAppeal = isOperator || isContractor;
+  const canFinalize = isOperator || isContractor || isOwner;
 
   return (
-    <div className="relative rounded-2xl bg-space-850/90 border border-space-700/80 p-5 shadow-radar-console hover:border-space-600 transition flex flex-col justify-between overflow-hidden group">
+    <div className="relative rounded-2xl bg-space-850/95 border border-space-700/80 p-5 shadow-radar-console hover:border-orbital-cyan/50 transition-all flex flex-col justify-between overflow-hidden group">
       {/* Top Banner */}
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-lg bg-space-900 border border-space-700 text-orbital-cyan">
+            <div className="p-2 rounded-xl bg-space-900 border border-space-700 text-orbital-cyan shadow-sm">
               <Satellite className="w-5 h-5" />
             </div>
             <div>
@@ -201,66 +183,75 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
                 <span className="font-heading font-bold text-white text-base">
                   NORAD #{policy.norad_cat_id}
                 </span>
-                <span className="text-xs font-mono text-orbital-cyan bg-orbital-cyan/10 px-1.5 py-0.5 rounded border border-orbital-cyan/20">
+                <span className="text-[11px] font-mono text-orbital-cyan bg-orbital-cyan/10 px-2 py-0.5 rounded border border-orbital-cyan/25 font-bold">
                   POLICY #{policy.policy_id}
                 </span>
               </div>
               <span className="text-[11px] font-mono text-slate-400">
-                Target Reentry: &le; {targetPerigee} km
+                Target Reentry Ceiling: &le; {policy.target_max_perigee_km || 120} km
               </span>
             </div>
           </div>
 
-          {/* Status Badge */}
+          {/* Status Badge & Dynamic Role */}
           <div className="flex flex-col items-end">
             <span
               className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-lg border ${meta.bg} ${meta.text} ${meta.border}`}
             >
               {meta.label}
             </span>
-            {userRole !== 'OBSERVER' && (
-              <span className="text-[10px] font-mono text-slate-400 mt-1">
-                Role: <span className="text-orbital-cyan">{userRole}</span>
+            <div className="flex items-center space-x-1 mt-1 text-[10px] font-mono">
+              <span className="text-slate-400">Role:</span>
+              <span
+                className={`font-bold ${
+                  isOperator
+                    ? 'text-sky-400'
+                    : isContractor
+                    ? 'text-deorbit-green'
+                    : isOwner
+                    ? 'text-purple-400'
+                    : 'text-slate-400'
+                }`}
+              >
+                {userRole}
               </span>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Bounty Escrow & Stake */}
+        {/* Bounty Escrow & Stake Cards */}
         <div className="grid grid-cols-2 gap-2 mb-4 font-mono text-xs">
-          <div className="bg-space-900/90 p-2.5 rounded-xl border border-space-800">
-            <span className="text-[10px] text-slate-400 uppercase block">Escrow Bounty</span>
-            <span className="text-sm font-bold text-white mt-0.5 block">
+          <div className="bg-space-900/95 p-3 rounded-xl border border-space-800">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Escrow Bounty</span>
+            <span className="text-sm font-bold text-white mt-1 block">
               {formatGen(policy.escrow_amount)} <span className="text-orbital-cyan text-xs">GEN</span>
             </span>
           </div>
 
-          <div className="bg-space-900/90 p-2.5 rounded-xl border border-space-800">
-            <span className="text-[10px] text-slate-400 uppercase block">Dispute Stake</span>
-            <span className="text-sm font-bold text-purple-300 mt-0.5 block">
-              {policy.dispute_bond !== '0'
-                ? `${formatGen(policy.dispute_bond)} GEN`
-                : '0.00 GEN'}
+          <div className="bg-space-900/95 p-3 rounded-xl border border-space-800">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Dispute Stake</span>
+            <span className="text-sm font-bold text-purple-300 mt-1 block">
+              {policy.dispute_bond !== '0' ? `${formatGen(policy.dispute_bond)} GEN` : '0.00 GEN'}
             </span>
           </div>
         </div>
 
-        {/* Perigee & Altitude Decay Metrics */}
-        <div className="bg-space-950/70 p-3 rounded-xl border border-space-800 mb-4 font-mono text-xs space-y-2">
+        {/* Perigee & Altitude Decay Gauge */}
+        <div className="bg-space-950/80 p-3 rounded-xl border border-space-800 mb-4 font-mono text-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-slate-400 text-[11px]">Measured Perigee:</span>
             <span className="font-bold text-white">
-              {policy.status >= 2 ? formatPerigee(measuredPerigee) : 'Awaiting ADR Burn'}
+              {policy.status >= 2 ? formatPerigee(policy.measured_final_perigee_km) : 'Awaiting ADR Burn'}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-400 text-[11px]">Altitude Decay Achieved:</span>
             <span className="font-bold text-deorbit-green">
-              {policy.status >= 2 ? formatDecay(decayAchieved) : '0 km'}
+              {policy.status >= 2 ? formatDecay(policy.altitude_decay_km) : '0 km'}
             </span>
           </div>
 
-          {/* Progress Visualizer Bar */}
+          {/* Progress Bar */}
           <div className="w-full bg-space-900 h-2 rounded-full overflow-hidden border border-space-800 mt-2">
             <div
               className={`h-full transition-all duration-500 ${
@@ -277,20 +268,20 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
         </div>
 
         {/* Stakeholder Addresses */}
-        <div className="space-y-1 mb-4 font-mono text-[11px] text-slate-400">
+        <div className="space-y-1 mb-4 font-mono text-[11px] text-slate-400 bg-space-900/50 p-2.5 rounded-lg border border-space-800">
           <div className="flex items-center justify-between">
-            <span>Operator:</span>
-            <span className="text-slate-300">{shortenAddress(policy.constellation_operator)}</span>
+            <span className="text-slate-500">Operator:</span>
+            <span className="text-slate-200">{shortenAddress(policy.constellation_operator)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span>Contractor:</span>
-            <span className="text-slate-300">{shortenAddress(policy.adr_contractor)}</span>
+            <span className="text-slate-500">Contractor:</span>
+            <span className="text-slate-200">{shortenAddress(policy.adr_contractor)}</span>
           </div>
         </div>
 
-        {/* Live Cooling-Off Challenge Countdown */}
+        {/* Live Cooling-Off Countdown */}
         {isAwaitingPayout && (
-          <div className="mb-4 p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs font-mono flex items-center justify-between">
+          <div className="mb-4 p-2.5 rounded-xl bg-indigo-950/50 border border-indigo-500/30 text-xs font-mono flex items-center justify-between">
             <span className="text-indigo-300 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
               Dispute Cooling Window:
@@ -301,39 +292,41 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
           </div>
         )}
 
-        {/* Disputed Banner */}
+        {/* Disputed Notice */}
         {isDisputed && (
-          <div className="mb-4 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs font-mono text-purple-300 flex items-center gap-2">
+          <div className="mb-4 p-2.5 rounded-xl bg-purple-950/50 border border-purple-500/30 text-xs font-mono text-purple-300 flex items-center gap-2">
             <Scale className="w-4 h-4 text-purple-400 shrink-0" />
-            <span>Appellate Review in progress with 10% staked dispute bond.</span>
+            <span>Appellate Review active with 10% staked dispute bond.</span>
           </div>
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons tailored by Role */}
       <div className="pt-3 border-t border-space-800 space-y-2">
-        {/* Contractor: Submit Telemetry (if open or unresolved) */}
+        {/* Contractor: Submit Telemetry */}
         {(policy.status === 0 || policy.status === 8) && (
           <button
             onClick={() => onOpenSubmitTelemetry(policy)}
-            className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gradient-to-r from-orbital-cyan to-blue-600 text-space-950 font-bold text-xs rounded-lg hover:brightness-110 shadow-orbital-glow transition"
+            disabled={!isContractor && account !== ''}
+            title={!isContractor && account !== '' ? 'Only designated ADR Contractor can submit telemetry' : ''}
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gradient-to-r from-orbital-cyan to-blue-600 text-space-950 font-bold text-xs rounded-lg hover:brightness-110 shadow-orbital-glow transition disabled:opacity-40"
           >
-            <Satellite className="w-3.5 h-3.5" />
-            <span>Submit Radar Telemetry</span>
+            <Radio className="w-3.5 h-3.5" />
+            <span>Submit Radar Telemetry {(!isContractor && account !== '') && '(Contractor Only)'}</span>
           </button>
         )}
 
-        {/* Stakeholder / Owner: Adjudicate Telemetry (if submitted) */}
+        {/* Stakeholder / Owner: Adjudicate Telemetry */}
         {(policy.status === 1 || policy.status === 8) && policy.tle_telemetry_url && (
           <button
             onClick={handleAdjudicate}
-            disabled={actionLoading === 'adjudicate'}
+            disabled={actionLoading === 'adjudicate' || (!canAdjudicate && account !== '')}
             className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-space-950 font-bold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition disabled:opacity-50"
           >
             {actionLoading === 'adjudicate' ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>AI Jury Adjudicating...</span>
+                <span>AI Astrodynamics Magistrate Evaluating...</span>
               </>
             ) : (
               <>
@@ -348,10 +341,11 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
         {isAwaitingPayout && coolingOffRemaining > 0 && (
           <button
             onClick={() => onOpenAppeal(policy)}
-            className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg shadow-lg shadow-purple-600/20 transition"
+            disabled={!canAppeal && account !== ''}
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg shadow-lg shadow-purple-600/20 transition disabled:opacity-40"
           >
             <Scale className="w-3.5 h-3.5" />
-            <span>Appeal Verdict (10% Stake)</span>
+            <span>Appeal Verdict (10% Staked Bond)</span>
           </button>
         )}
 
@@ -359,13 +353,13 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
         {isAwaitingPayout && coolingOffRemaining <= 0 && (
           <button
             onClick={handleFinalize}
-            disabled={actionLoading === 'finalize'}
+            disabled={actionLoading === 'finalize' || (!canFinalize && account !== '')}
             className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gradient-to-r from-deorbit-green to-emerald-600 text-space-950 font-bold text-xs rounded-lg shadow-deorbit-glow transition disabled:opacity-50"
           >
             {actionLoading === 'finalize' ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Finalizing Settlement...</span>
+                <span>Finalizing Settlement on StudioNet...</span>
               </>
             ) : (
               <>
@@ -376,11 +370,11 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
           </button>
         )}
 
-        {/* Supreme Appellate Adjudication (if disputed) */}
+        {/* Supreme Appellate Adjudication */}
         {isDisputed && (
           <button
             onClick={handleAdjudicateAppeal}
-            disabled={actionLoading === 'appeal_adj'}
+            disabled={actionLoading === 'appeal_adj' || (!canAdjudicate && account !== '')}
             className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-purple-500 hover:bg-purple-400 text-white font-bold text-xs rounded-lg shadow-lg shadow-purple-500/20 transition disabled:opacity-50"
           >
             {actionLoading === 'appeal_adj' ? (
@@ -391,18 +385,18 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({
             ) : (
               <>
                 <Scale className="w-3.5 h-3.5" />
-                <span>Adjudicate Appellate Evidence</span>
+                <span>Adjudicate Appellate Telemetry</span>
               </>
             )}
           </button>
         )}
 
-        {/* View Telemetry & AI Inspector Modal */}
+        {/* Astrodynamics Inspector Modal */}
         <button
           onClick={() => onOpenInspector(policy)}
-          className="w-full flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-space-900 hover:bg-space-800 text-slate-300 hover:text-white border border-space-750 rounded-lg text-xs font-mono transition"
+          className="w-full flex items-center justify-center space-x-1.5 px-3 py-2 bg-space-900 hover:bg-space-800 text-slate-300 hover:text-white border border-space-750 rounded-lg text-xs font-mono transition"
         >
-          <span>Astrodynamics Inspector</span>
+          <span>Tri-Vector AI Inspector</span>
           <ChevronRight className="w-3 h-3 text-orbital-cyan" />
         </button>
       </div>

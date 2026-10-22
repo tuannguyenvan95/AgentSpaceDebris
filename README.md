@@ -4,7 +4,7 @@
 [![Network](https://img.shields.io/badge/Network-GenLayer%20StudioNet-38BDF8?style=for-the-badge)](https://studio.genlayer.com)
 [![Chain ID](https://img.shields.io/badge/Chain%20ID-61999%20(0xF22F)-10B981?style=for-the-badge)](https://studio.genlayer.com/api)
 [![Status](https://img.shields.io/badge/Status-Consensus%20Deployed-brightgreen?style=for-the-badge)]()
-[![Standard](https://img.shields.io/badge/Domain-SpaceTech%20%2F%20Orbital%20Sustainability-F97316?style=for-the-badge)]()
+[![Domain](https://img.shields.io/badge/Domain-SpaceTech%20%2F%20Orbital%20Sustainability-F97316?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -15,7 +15,7 @@
 
 ---
 
-## 🌌 The Problem Space: The Kessler Syndrome
+## 🌌 1. The Problem Space: The Kessler Syndrome
 
 Low Earth Orbit (LEO) is experiencing exponential congestion from over 36,000 tracked space debris fragments larger than 10 cm and millions of untracked hypervelocity projectiles. A runaway cascade of collisions—the **Kessler Syndrome**—threatens critical civilian telecommunications, navigation (GPS/Galileo), and Earth observation satellites.
 
@@ -27,9 +27,9 @@ Commercial LEO constellation operators (e.g., Starlink, OneWeb) and space agenci
 
 ---
 
-## 💡 The GenLayer Solution
+## 💡 2. The GenLayer Solution
 
-**AgentSpaceDebris** deploys an **Intelligent Contract** on GenLayer StudioNet that automates escrow verification via on-chain AI consensus:
+**AgentSpaceDebris** deploys an **Intelligent Contract** on GenLayer StudioNet that arbitrates production telemetry via on-chain AI consensus:
 
 ```
 +-----------------------------------------------------------------------------------------------+
@@ -38,7 +38,7 @@ Commercial LEO constellation operators (e.g., Starlink, OneWeb) and space agenci
 | 1. Constellation Operator locks GEN bounty escrow (create_removal_escrow)                     |
 | 2. ADR Contractor submits radar ephemeris tracking (submit_orbital_telemetry)                 |
 | 3. On-chain AI Astrodynamics Jury fetches radar feeds via gl.nondet.web.render                 |
-| 4. Semantic consensus validates perigee decay & reentry status via gl.vm.run_nondet           |
+| 4. Tri-Vector semantic consensus validates perigee decay & reentry status via gl.vm.run_nondet|
 | 5. Automated Decision Matrix:                                                                 |
 |    * DEORBIT_CONFIRMED_FULL: Perigee <= 120 km or Reentered -> 100% Bounty Disbursed          |
 |    * PARTIAL_ORBIT_LOWERING: Altitude Decay >= 150 km -> 40% Fuel Milestone Disbursed         |
@@ -48,7 +48,7 @@ Commercial LEO constellation operators (e.g., Starlink, OneWeb) and space agenci
 
 ---
 
-## 🚀 Deployed Contract Information (GenLayer StudioNet)
+## 🚀 3. Deployed Contract Information (GenLayer StudioNet)
 
 The intelligent contract is compiled, validated, and confirmed by validator consensus on GenLayer StudioNet:
 
@@ -57,15 +57,40 @@ The intelligent contract is compiled, validated, and confirmed by validator cons
 | **Target Network** | **GenLayer StudioNet** |
 | **Chain ID** | `61999` (Hex: `0xF22F`) |
 | **RPC Endpoint** | `https://studio.genlayer.com/api` |
-| **Contract Address** | `0xCC300573284e1d3EE5882426fC9033F255A3Aa45` |
-| **Deployment Transaction** | `0x9439d1213ad421628d6d9b854e4dde13c7769b3017ae21cfe829fad1c8c870b3` |
-| **Consensus Receipt Status** | `5` (ACCEPTED / FINALIZED) |
+| **Contract Address** | `0xf7908283868BE5BE9ac235F74F900F906FA92F10` |
+| **Deployment Transaction** | `0x13d18c31367756a8b306f460e40fa99b98b1c00bbfef4ce9629a7cdd549688da` |
+| **Consensus Receipt Status** | `5` (`ACCEPTED` / `FINALIZED`) |
 | **Live Production dApp** | [https://agentspacedebris.vercel.app](https://agentspacedebris.vercel.app) |
 | **Studio Explorer** | [https://studio.genlayer.com](https://studio.genlayer.com) |
 
 ---
 
-## 🏛️ Decision Matrix & Escrow Settlement
+## 👥 4. Role-Based Access Control Specification
+
+| Role | Entity | Authorized On-Chain Actions |
+|---|---|---|
+| `OPERATOR` | Constellation Sponsor / Agency | `create_removal_escrow`, `adjudicate_debris_deorbit`, `appeal_verdict`, `finalize_settlement`, `cancel_or_reclaim` |
+| `CONTRACTOR` | Active Debris Removal (ADR) Servicer | `submit_orbital_telemetry`, `adjudicate_debris_deorbit`, `appeal_verdict`, `finalize_settlement` |
+| `APPELLANT` | Bond Staker in Active Dispute | Staked 10% bond; receives bond refund if appeal is upheld |
+| `OWNER` | Contract Deployer | Platform health checks, fallback settlement facilitation |
+| `OBSERVER` | Public / Academic Spectator | View-only queries (`get_policy`, `get_all_policies`, `get_stats`, radar blips) |
+
+---
+
+## 🧠 5. Tri-Vector AI Astrodynamics Consensus Matrix
+
+When `adjudicate_debris_deorbit` is triggered on-chain, GenLayer validators compute three distinct astrodynamics vectors:
+
+1. **Vector A (Orbital Decay Magnitude):**
+   Calculates total altitude reduction achieved ($\Delta h = h_{\text{initial}} - h_{\text{final}}$) and verifies apogee/perigee drop rates.
+2. **Vector B (Reentry Interface Boundary):**
+   Verifies whether the target space object has entered the dense mesosphere ($h_p \le 120\text{ km}$) or confirmed total atmospheric disintegration.
+3. **Vector C (Kessler Mitigation Index):**
+   Computes a 0–100 spatial risk mitigation score evaluating the reduction of spatial conjunction probability ($P_c$) with operational mega-constellations.
+
+---
+
+## 🏛️ 6. Decision Matrix & Escrow Settlement
 
 | Verdict | Astrodynamics Criteria | On-Chain Action |
 |---|---|---|
@@ -76,13 +101,13 @@ The intelligent contract is compiled, validated, and confirmed by validator cons
 
 ---
 
-## 🛡️ Robust Security Engineering
+## 🛡️ 7. Security Engineering
 
 1. **Accredited Space Tracker Whitelist (`ACCREDITED_SPACE_TRACKERS`):**
    Telemetry is accepted solely from authenticated space surveillance roots:
    - `space-track.org`, `celestrak.org`, `celestrak.com`, `discosweb.esoc.esa.int`, `esa.int`, `orbitaldebris.jsc.nasa.gov`, `nasa.gov`, `leolabs.space`.
-2. **Anti-Hallucination Security Canary:**
-   Strict verification of `CANARY_AGENT_SPACE_DEBRIS_V1` inside validator calldata prevents prompt injections.
+2. **Anti-Hallucination Security Canary (`CANARY_AGENT_SPACE_DEBRIS_V1`):**
+   Strict verification inside validator calldata prevents prompt injections.
 3. **Cooling-Off Dispute Window & Bonded Appeals:**
    Stakeholders have a 24-block (~72 seconds) challenge window to file an appeal backed by a 10% staked bond and supplemental radar logs.
 4. **Pull-Payment Safeguard (`_safe_transfer` & `claim_payout`):**
@@ -90,7 +115,7 @@ The intelligent contract is compiled, validated, and confirmed by validator cons
 
 ---
 
-## 📁 Repository Structure
+## 📁 8. Repository Structure
 
 ```
 AgentSpaceDebris/
@@ -125,17 +150,17 @@ AgentSpaceDebris/
 ├── CHANGELOG.md                    # Milestone release history
 ├── SECURITY.md                     # Security policies & threat model
 ├── LICENSE                         # MIT License
+├── logo.png                        # Branding logo asset
 └── deployment.json                 # StudioNet consensus deployment receipt
 ```
 
 ---
 
-## 🧪 Testing the Protocol
+## 🧪 9. Testing the Protocol
 
 Execute the full test suite with `pytest`:
 
 ```bash
-# Run all unit and integration tests
 python -m pytest tests -v
 ```
 
@@ -150,26 +175,36 @@ tests/test_agentspacedebris.py::test_operator_cannot_self_designate_contractor P
 tests/test_agentspacedebris.py::test_role_based_access_control PASSED    [ 77%]
 tests/test_agentspacedebris.py::test_cooling_off_countdown_tracking PASSED [ 88%]
 tests/test_agentspacedebris.py::test_deploy_with_integer_address_from_studio PASSED [100%]
-============================== 9 passed in 0.04s ==============================
+============================== 9 passed in 0.05s ==============================
 ```
 
 ---
 
-## 💻 Running the Frontend Locally
+## 🛠️ 10. How to Deploy the Contract Yourself
 
+You can easily deploy your own instance of the `AgentSpaceDebris` Intelligent Contract to GenLayer StudioNet:
+
+### Method 1: Using the Automated Python Deployment Script
 ```bash
-cd frontend
-npm install
-npm run dev
+# 1. Ensure genlayer_py is installed
+pip install genlayer-py
+
+# 2. (Optional) Set your custom deployer private key
+# export DEPLOYER_PRIVATE_KEY="0x..."
+
+# 3. Run the automated deployment script
+python scripts/deploy_studionet.py
 ```
+The script will:
+- Check your balance and automatically request faucet funds if needed.
+- Read `contracts/contract.py` and compile it for GenVM.
+- Submit the deployment transaction to StudioNet (`https://studio.genlayer.com/api`).
+- Wait for validator consensus and block confirmation (`status: 5`).
+- Automatically update `deployment.json`, `frontend/.env`, and `frontend/src/config/genlayer.ts` with your new contract address.
 
-Visit `http://localhost:3000` to interact with the deployed Intelligent Contract on GenLayer StudioNet.
-
----
-
-## 🛰️ Target Orbit Demonstrations
-
-1. **NORAD #48274 (CZ-5B Core Stage):** Uncontrolled heavy rocket body de-orbiting into the Pacific Ocean.
-2. **NORAD #22923 (SL-16 R/B Zenit):** Spent rocket body in high LEO orbit targeted for active tether de-orbit.
-3. **NORAD #27386 (Envisat):** 8.2-ton defunct ESA observation satellite crossing crowded 765 km sun-synchronous orbit.
-4. **NORAD #49863 (Cosmos 1408 Shrapnel):** High-risk kinetic anti-satellite trackable debris cloud fragment.
+### Method 2: Via GenLayer Studio Web Interface
+1. Navigate to [GenLayer Studio](https://studio.genlayer.com).
+2. Connect your wallet (configured for StudioNet, Chain ID: `61999` / `0xF22F`).
+3. Click **New Contract** and upload `contracts/contract.py`.
+4. Deploy with empty arguments (`[]`) or pass your custom owner address.
+5. Copy the deployed contract address and enter it directly in the dApp's **Settings (⚙️)** drawer to interact with your instance!
