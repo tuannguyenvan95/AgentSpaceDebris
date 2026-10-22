@@ -850,18 +850,18 @@ Respond ONLY with valid JSON:
         return "OBSERVER"
 
     @gl.public.view
-    def get_remaining_cooling_off_seconds(self, policy_id: str) -> i64:
+    def get_remaining_cooling_off_seconds(self, policy_id: str) -> u64:
         """Returns remaining cooling off challenge window in seconds (0 if expired or not in cooling off)."""
         pid = self._resolve_pid(policy_id)
         if pid not in self.policies:
-            return i64(0)
+            return u64(0)
         p = self.policies[pid]
         if p.status != STATUS_AWAITING_PAYOUT or p.audit_completed_time <= bigint(0):
-            return i64(0)
+            return u64(0)
         current_time = self._get_current_timestamp()
         expiry = p.audit_completed_time + COOLING_OFF_SECONDS
         remaining = int(expiry - current_time)
-        return i64(remaining if remaining > 0 else 0)
+        return u64(remaining if remaining > 0 else 0)
 
     @gl.public.view
     def get_policy_count(self) -> u64:
