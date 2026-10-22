@@ -2,7 +2,6 @@
 from genlayer import *
 from dataclasses import dataclass
 import json
-import hashlib
 
 CANARY_TOKEN = "CANARY_AGENT_SPACE_DEBRIS_V1"
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -354,6 +353,7 @@ class Contract(gl.Contract):
                     "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
                 }
 
+            import hashlib
             ev_hash = hashlib.sha256(raw_feed.encode("utf-8")).hexdigest()
 
             prompt = f"""You are the Chief Astrodynamics Magistrate & Space Situational Awareness (SSA) Validator on GenLayer.
